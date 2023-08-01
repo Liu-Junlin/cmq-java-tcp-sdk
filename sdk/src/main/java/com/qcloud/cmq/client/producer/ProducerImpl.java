@@ -11,13 +11,14 @@ import com.qcloud.cmq.client.netty.CommunicationMode;
 import com.qcloud.cmq.client.netty.RemoteException;
 import com.qcloud.cmq.client.protocol.Cmq;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ProducerImpl {
-    private static final Logger logger = LogHelper.getLog();
+    private static final Logger logger = LoggerFactory.getLogger(ProducerImpl.class);
     private final Producer producer;
     private ServiceState serviceState = ServiceState.CREATE_JUST;
     private MQClientInstance mQClientInstance;

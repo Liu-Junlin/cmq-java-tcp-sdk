@@ -1,10 +1,10 @@
 package com.qcloud.cmq.client.http;
 
-import com.qcloud.cmq.client.common.LogHelper;
 import com.qcloud.cmq.client.common.ResponseCode;
 import com.qcloud.cmq.client.exception.MQClientException;
 import com.qcloud.cmq.client.exception.MQServerException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -17,19 +17,18 @@ import java.util.TreeMap;
  * @author: feynmanlin
  * @date: 2020/1/17 11:43 上午
  */
-public abstract class AbstractHttpWrapper implements HttpWrapper{
+public abstract class AbstractHttpWrapper implements HttpWrapper {
 
-    private final Logger logger = LogHelper.getLog();
+    private final Logger logger = LoggerFactory.getLogger(AbstractHttpWrapper.class);
 
-    private String endpoint;
-    private String path;
-    private String secretId;
-    private String secretKey;
-    private String method;
+    private final String endpoint;
+    private final String path;
+    private final String secretId;
+    private final String secretKey;
+    private final String method;
 
 
-    public AbstractHttpWrapper(String endpoint, String path, String secretId,
-                               String secretKey, String method){
+    public AbstractHttpWrapper(String endpoint, String path, String secretId, String secretKey, String method) {
         this.endpoint = endpoint;
         this.path = path;
         this.secretId = secretId;
@@ -81,13 +80,9 @@ public abstract class AbstractHttpWrapper implements HttpWrapper{
                             "URL length is larger than 2K when use GET method");
                 }
             }
-            if (LogHelper.LOG_REQUEST) {
-                logger.debug("===> call param:" + param);
-            }
+            logger.trace("===> call param:{}", param);
             String result = doRequest(method, url.toString(), req.toString());
-            if (LogHelper.LOG_REQUEST) {
-                logger.debug("===> result:" + result);
-            }
+            logger.trace("===> result:{}", result);
             return result;
         } catch (Exception e) {
             logger.error("call http request error", e);
@@ -97,6 +92,7 @@ public abstract class AbstractHttpWrapper implements HttpWrapper{
 
     /**
      * do Request
+     *
      * @param method
      * @param url
      * @param requestParam
@@ -106,6 +102,7 @@ public abstract class AbstractHttpWrapper implements HttpWrapper{
 
     /**
      * add Signature to param
+     *
      * @param param
      * @param src
      * @param secretKey
@@ -117,6 +114,7 @@ public abstract class AbstractHttpWrapper implements HttpWrapper{
 
     /**
      * add Signature Method to param
+     *
      * @param param
      */
     protected abstract void addSignatureMethod(TreeMap<String, String> param);

@@ -1,14 +1,18 @@
 package com.qcloud.cmq.client.client;
 
 import com.google.protobuf.TextFormat;
+import com.qcloud.cmq.client.common.ClientConfig;
+import com.qcloud.cmq.client.common.NettyClientConfig;
+import com.qcloud.cmq.client.common.RequestIdHelper;
+import com.qcloud.cmq.client.common.SignTool;
 import com.qcloud.cmq.client.consumer.*;
-import com.qcloud.cmq.client.producer.*;
-import com.qcloud.cmq.client.common.*;
 import com.qcloud.cmq.client.exception.MQClientException;
 import com.qcloud.cmq.client.exception.MQServerException;
 import com.qcloud.cmq.client.netty.*;
+import com.qcloud.cmq.client.producer.*;
 import com.qcloud.cmq.client.protocol.Cmq;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CMQClient {
 
-    private final static Logger logger = LogHelper.getLog();
+    private final static Logger logger = LoggerFactory.getLogger(CMQClient.class);
     private ClientConfig clientConfig;
     private String clientId;
     private final NettyClient nettyClient;

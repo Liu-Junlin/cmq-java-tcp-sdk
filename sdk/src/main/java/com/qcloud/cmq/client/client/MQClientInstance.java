@@ -8,6 +8,7 @@ import com.qcloud.cmq.client.exception.MQServerException;
 import com.qcloud.cmq.client.producer.ProducerImpl;
 import io.netty.util.internal.ConcurrentSet;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -16,23 +17,22 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MQClientInstance {
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
-    private final Logger logger = LogHelper.getLog();
+    private final Logger logger = LoggerFactory.getLogger(MQClientInstance.class);
     private final ClientConfig clientConfig;
     private final String clientId;
 
-    private final ConcurrentSet<ProducerImpl> producerTable = new ConcurrentSet<ProducerImpl>();
-    private final ConcurrentSet<ConsumerImpl> consumerTable = new ConcurrentSet<ConsumerImpl>();
+    private final ConcurrentHashMap.KeySetView<Object, Boolean> producerTable = ConcurrentHashMap.newKeySet();
+    private final ConcurrentHashMap.KeySetView<Object, Boolean> consumerTable = ConcurrentHashMap.newKeySet();
 
-    private final ConcurrentHashMap<String, NameServerClient> nameServerTable = new ConcurrentHashMap<String, NameServerClient>();
+    private final ConcurrentHashMap<String, NameServerClient> nameServerTable = new ConcurrentHashMap<>();
     private final Lock lockNameServer = new ReentrantLock();
 
-//    private final CMQClient cMQClient;
+    //    private final CMQClient cMQClient;
     private CMQClientInterceptor.Chain cMQClient;
-    
+
     private ServiceState serviceState = ServiceState.CREATE_JUST;
 
-    MQClientInstance(ClientConfig clientConfig, int instanceIndex, String clientId,
-                     List<CMQClientInterceptor> interceptors) {
+    MQClientInstance(ClientConfig clientConfig, int instanceIndex, String clientId, List<CMQClientInterceptor> interceptors) {
         this.clientConfig = clientConfig;
         this.clientId = clientId;
         NettyClientConfig nettyClientConfig = new NettyClientConfig();
@@ -43,7 +43,7 @@ public class MQClientInstance {
                 clientConfig, clientId), interceptors);
 //        this.cMQClient = new CMQClient(nettyClientConfig, cMQClientHandler, clientConfig, clientId);
         logger.info("created a new client Instance, FactoryIndex: {} ClientID: {} {} ",
-            instanceIndex, this.clientId, this.clientConfig);
+                instanceIndex, this.clientId, this.clientConfig);
     }
 
     public void start() throws MQClientException {
@@ -82,7 +82,7 @@ public class MQClientInstance {
         if (null == this.clientConfig.getSignMethod()) {
             this.clientConfig.setSignMethod(ClientConfig.SIGN_METHOD_SHA1);
         } else if (!this.clientConfig.getSignMethod().equals(ClientConfig.SIGN_METHOD_SHA1)
-                && !this.clientConfig.getSignMethod().equals(ClientConfig.SIGN_METHOD_SHA256)){
+                && !this.clientConfig.getSignMethod().equals(ClientConfig.SIGN_METHOD_SHA256)) {
             throw new MQClientException(ResponseCode.SIGNATURE_METHOD_NOT_SUPPORT, "SignatureMethod must be HmacSHA1 or HmacSHA256");
         }
     }
@@ -123,7 +123,7 @@ public class MQClientInstance {
     public void updateQueueRoute(String queue, final ConcurrentHashMap<String, List<String>> routeTable) throws MQClientException {
         try {
             if (this.lockNameServer.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
-                for (NameServerClient client: this.nameServerTable.values()) {
+                for (NameServerClient client : this.nameServerTable.values()) {
                     try {
                         List<String> result = client.fetchQueueRoute(queue);
                         routeTable.put(queue, result);
@@ -144,7 +144,7 @@ public class MQClientInstance {
     public void updateTopicRoute(String topic, final ConcurrentHashMap<String, List<String>> routeTable) throws MQClientException {
         try {
             if (this.lockNameServer.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
-                for (NameServerClient client: this.nameServerTable.values()) {
+                for (NameServerClient client : this.nameServerTable.values()) {
                     try {
                         List<String> result = client.fetchTopicRoute(topic);
                         routeTable.put(topic, result);

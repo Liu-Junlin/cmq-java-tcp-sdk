@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.*;
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import java.util.Enumeration;
 
 public class RemoteHelper {
 
-    private static final Logger logger = LogHelper.getLog();
+    private static final Logger logger = LoggerFactory.getLogger(RemoteHelper.class);
 
     public static String exceptionSimpleDesc(final Throwable e) {
         StringBuilder sb = new StringBuilder();

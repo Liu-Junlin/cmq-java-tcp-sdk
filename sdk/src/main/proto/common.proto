@@ -1,4 +1,4 @@
-
+option java_package = "com.qcloud.cmq.client.protocol";
 message properinfo{
   required  uint64 msg_id =1; //msg ID
 }

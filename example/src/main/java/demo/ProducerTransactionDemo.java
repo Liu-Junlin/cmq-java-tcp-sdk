@@ -1,20 +1,16 @@
 package demo;
 
 import com.qcloud.cmq.client.common.ClientConfig;
-import com.qcloud.cmq.client.common.LogHelper;
 import com.qcloud.cmq.client.common.ResponseCode;
 import com.qcloud.cmq.client.common.TransactionStatus;
 import com.qcloud.cmq.client.consumer.Message;
 import com.qcloud.cmq.client.exception.MQClientException;
 import com.qcloud.cmq.client.producer.*;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProducerTransactionDemo {
-
-    private final static Logger logger = LogHelper.getLog();
 
     public static void main(String[] args) {
         TransactionProducer producer = new TransactionProducer();
@@ -42,7 +38,7 @@ public class ProducerTransactionDemo {
         producer.setChecker(queue, new TransactionStatusCheckerImpl());
 
 
-        try{
+        try {
             // 启动对象前必须设置好相关参数
             producer.start();
             String msg = "test_message";
@@ -71,7 +67,7 @@ public class ProducerTransactionDemo {
             List<Object> argsList = new ArrayList<Object>();
             List<String> msgList = new ArrayList<String>();
 
-            for (int i = 0;i < 3; i++){
+            for (int i = 0; i < 3; i++) {
                 executorsList.add(executor);
                 argsList.add("test_arg");
                 msgList.add(msg + i);
@@ -85,7 +81,7 @@ public class ProducerTransactionDemo {
                 System.out.println("==> code:" + batchResult.getReturnCode() + " error:" + batchResult.getErrorMessage());
             }
 
-        }catch (MQClientException e){
+        } catch (MQClientException e) {
             e.printStackTrace();
         }
 

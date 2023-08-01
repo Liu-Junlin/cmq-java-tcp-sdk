@@ -2,7 +2,10 @@ package com.qcloud.cmq.client.netty;
 
 import com.google.protobuf.TextFormat;
 import com.qcloud.cmq.client.client.CMQClientHandler;
-import com.qcloud.cmq.client.common.*;
+import com.qcloud.cmq.client.common.NettyClientConfig;
+import com.qcloud.cmq.client.common.RemoteHelper;
+import com.qcloud.cmq.client.common.RequestIdHelper;
+import com.qcloud.cmq.client.common.ResponseCode;
 import com.qcloud.cmq.client.protocol.Cmq;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -16,6 +19,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.*;
@@ -25,7 +29,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NettyClient {
-    private static final Logger logger = LogHelper.getLog();
+    private static final Logger logger = LoggerFactory.getLogger(NettyClient.class);
 
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
     private static final int CONNECTION_NOT_AUTHED = 306;
@@ -97,14 +101,14 @@ public class NettyClient {
         }
     }
 
-    private void dealConfirmAck(ChannelHandlerContext ctx, Cmq.CMQProto request){
+    private void dealConfirmAck(ChannelHandlerContext ctx, Cmq.CMQProto request) {
         Cmq.cmq_transaction_confirm_reply reply = request.getTransactionConfirmReply();
-        if (reply == null){
+        if (reply == null) {
             logger.error("error in proto!");
         }
         // for single
         Cmq.cmq_transaction_confirm_reply_item item = reply.getItem(0);
-        if (item.getState() != 1 || item.getErrCode() == 3){
+        if (item.getState() != 1 || item.getErrCode() == 3) {
             System.out.println("get error " + item.getErrMsg());
         }
     }
@@ -142,9 +146,7 @@ public class NettyClient {
         final long requestId = cmd.getSeqno();
         final ResponseFuture responseFuture = responseTable.get(requestId);
         if (responseFuture != null) {
-            if (LogHelper.LOG_REQUEST) {
-                logger.debug("processResponseCommand:{}", TextFormat.shortDebugString(cmd));
-            }
+            logger.trace("processResponseCommand:{}", TextFormat.shortDebugString(cmd));
             responseFuture.setResponseCommand(cmd);
             responseFuture.release();
             responseTable.remove(requestId);
@@ -157,7 +159,6 @@ public class NettyClient {
             }
             if (cmd.getResult() == CONNECTION_NOT_AUTHED) {
                 this.closeChannel(ctx.channel());
-                return;
             }
         } else {
             logger.warn("receive response, but not matched any request, " + RemoteHelper.parseChannelRemoteAddr(ctx.channel()));
@@ -226,9 +227,7 @@ public class NettyClient {
 
     private Cmq.CMQProto invokeSyncImpl(final Channel channel, final Cmq.CMQProto request, final long timeoutMillis)
             throws InterruptedException, RemoteSendRequestException, RemoteTimeoutException {
-        if (LogHelper.LOG_REQUEST) {
-            logger.debug("invokeSyncImpl: msg: " + TextFormat.shortDebugString(request) + " timeoutMillis:" + timeoutMillis);
-        }
+        logger.trace("invokeSyncImpl: msg: {} timeoutMillis:{}", TextFormat.shortDebugString(request), +timeoutMillis);
         final long requestId = request.getSeqno();
         try {
             final ResponseFuture responseFuture = new ResponseFuture(timeoutMillis, null, null);
@@ -268,9 +267,7 @@ public class NettyClient {
     private void invokeAsyncImpl(final Channel channel, final Cmq.CMQProto request, final long timeoutMillis,
                                  final InvokeCallback invokeCallback)
             throws InterruptedException, RemoteTooMuchRequestException, RemoteTimeoutException, RemoteSendRequestException {
-        if (LogHelper.LOG_REQUEST) {
-            logger.debug("invokeAsyncImpl: msg: " + TextFormat.shortDebugString(request) + " timeoutMillis:" + timeoutMillis);
-        }
+        logger.debug("invokeAsyncImpl: msg: {} timeoutMillis:{}", TextFormat.shortDebugString(request), timeoutMillis);
         final long requestId = request.getSeqno();
         boolean acquired = this.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
         if (acquired) {
@@ -319,21 +316,16 @@ public class NettyClient {
 
     private void invokeOneWayImpl(final Channel channel, final Cmq.CMQProto request, final long timeoutMillis)
             throws InterruptedException, RemoteTooMuchRequestException, RemoteTimeoutException, RemoteSendRequestException {
-        if (LogHelper.LOG_REQUEST) {
-            logger.debug("invokeOnyWayImpl: msg: " + TextFormat.shortDebugString(request) + " timeoutMillis:" + timeoutMillis);
-        }
+        logger.debug("invokeOnyWayImpl: msg: {} timeoutMillis:{}", TextFormat.shortDebugString(request), timeoutMillis);
         boolean acquired = this.semaphoreOneWay.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
         if (acquired) {
             final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreOneWay);
             try {
                 Cmq.CMQProto newRequest = Cmq.CMQProto.newBuilder(request).build();
-                channel.writeAndFlush(newRequest).addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture f) throws Exception {
-                        once.release();
-                        if (!f.isSuccess()) {
-                            logger.warn("send a request command to channel <" + channel.remoteAddress() + "> failed.");
-                        }
+                channel.writeAndFlush(newRequest).addListener((ChannelFutureListener) f -> {
+                    once.release();
+                    if (!f.isSuccess()) {
+                        logger.warn("send a request command to channel <" + channel.remoteAddress() + "> failed.");
                     }
                 });
             } catch (Exception e) {
@@ -366,7 +358,7 @@ public class NettyClient {
                     throw new RemoteConnectException(address);
                 }
                 if (!cw.isLogin()) {
-                    synchronized (this){
+                    synchronized (this) {
                         if (!cw.isLogin()) {
                             this.authChannel(cw, timeoutMillis);
                         }
@@ -423,7 +415,7 @@ public class NettyClient {
                     throw new RemoteConnectException(address);
                 }
                 if (!cw.isLogin()) {
-                    synchronized (this){
+                    synchronized (this) {
                         if (!cw.isLogin()) {
                             this.authChannel(cw, timeoutMillis);
                         }
@@ -466,7 +458,7 @@ public class NettyClient {
                     throw new RemoteConnectException(address);
                 }
                 if (!cw.isLogin()) {
-                    synchronized (this){
+                    synchronized (this) {
                         if (!cw.isLogin()) {
                             this.authChannel(cw, timeoutMillis);
                         }
@@ -575,8 +567,9 @@ public class NettyClient {
     }
 
     private void closeChannel(final String address, final Channel channel) {
-        if (null == channel)
+        if (null == channel) {
             return;
+        }
 
         final String addressRemote = null == address ? RemoteHelper.parseChannelRemoteAddr(channel) : address;
 
@@ -617,8 +610,9 @@ public class NettyClient {
     }
 
     private void closeChannel(final Channel channel) {
-        if (null == channel)
+        if (null == channel) {
             return;
+        }
 
         try {
             if (this.lockChannelTables.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {

@@ -1,7 +1,7 @@
 package com.qcloud.cmq.client.client;
 
 import com.qcloud.cmq.client.common.ClientConfig;
-import com.qcloud.cmq.client.common.LogHelper;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,10 +9,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MQClientManager {
-    private final static org.slf4j.Logger log = LogHelper.getLog();
-    private static MQClientManager instance = new MQClientManager();
-    private AtomicInteger factoryIndexGenerator = new AtomicInteger();
-    private ConcurrentMap<String/* clientId */, MQClientInstance> factoryTable = new ConcurrentHashMap<String, MQClientInstance>();
+    private final static org.slf4j.Logger log = LoggerFactory.getLogger(MQClientManager.class);
+    private static final MQClientManager instance = new MQClientManager();
+    private final AtomicInteger factoryIndexGenerator = new AtomicInteger();
+    private final ConcurrentMap<String/* clientId */, MQClientInstance> factoryTable = new ConcurrentHashMap<String, MQClientInstance>();
 
     private MQClientManager() {
     }

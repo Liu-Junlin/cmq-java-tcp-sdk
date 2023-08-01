@@ -46,7 +46,7 @@ public class NameServerClient {
     }
 
     private static List<String> parseBroker(JSONObject jsonObject) {
-        List<String> brokerInfo = new ArrayList<String>();
+        List<String> brokerInfo = new ArrayList<>();
         JSONArray jsonArray = jsonObject.getJSONArray("addr");
         for (int i=0; i<jsonArray.length(); i++) {
             brokerInfo.add(jsonArray.getString(i));

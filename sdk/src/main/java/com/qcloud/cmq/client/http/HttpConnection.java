@@ -1,36 +1,41 @@
 package com.qcloud.cmq.client.http;
 
-import com.qcloud.cmq.client.common.LogHelper;
 import com.qcloud.cmq.client.common.ResponseCode;
 import com.qcloud.cmq.client.exception.MQClientException;
 import com.qcloud.cmq.client.exception.MQServerException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
 class HttpConnection {
-    private final Logger logger = LogHelper.getLog();
+    private final Logger logger = LoggerFactory.getLogger(HttpConnection.class);
 
-    private int timeout;
-    private boolean isKeepAlive;
+    private final int timeout;
+    private final boolean isKeepAlive;
 
     HttpConnection() {
         this.timeout = 10000;
         this.isKeepAlive = true;
     }
 
-    HttpConnection(int timeout,boolean isKeepAlive) {
+    HttpConnection(int timeout, boolean isKeepAlive) {
         this.timeout = timeout;
         this.isKeepAlive = isKeepAlive;
     }
 
-    private URLConnection newHttpConnection(String url) throws KeyManagementException, NoSuchAlgorithmException, IOException{
+    private URLConnection newHttpConnection(String url) throws KeyManagementException, NoSuchAlgorithmException, IOException {
         trustAllHttpsCertificates();
         URLConnection connection;
         URL realUrl = new URL(url);

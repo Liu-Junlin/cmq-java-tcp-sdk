@@ -2,6 +2,7 @@ package com.qcloud.cmq.client.common;
 
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -16,7 +17,7 @@ public class RequestIdHelper {
 
     static private AtomicLong requestId = new AtomicLong(1);
     static private AtomicLong sno = new AtomicLong(1);
-    private final static Logger logger = LogHelper.getLog();
+    private final static Logger logger = LoggerFactory.getLogger(RequestIdHelper.class);
     static private String prefix;
 
     // 构造ip的字符串
@@ -43,7 +44,7 @@ public class RequestIdHelper {
         return requestId.getAndIncrement();
     }
 
-    public static long getNextSeqNo(){
+    public static long getNextSeqNo() {
         return sno.getAndIncrement();
     }
 }
